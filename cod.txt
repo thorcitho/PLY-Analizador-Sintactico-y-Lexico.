@@ -1,11 +1,8 @@
+AND , BASIC, BREAK , DO , ELSE ,
+EQ , FALSE , GE, ID, IF,
+INDEX, LE , MINUS, NE , NUM ,
+OR , REAL , TEMP, TRUE , WHILE   
 
-
-  AND , BASIC, BREAK , DO , ELSE ,
-  EQ , FALSE , GE, ID, IF,
-  INDEX, LE , MINUS, NE , NUM ,
-  OR , REAL , TEMP, TRUE , WHILE 
-  
-{
 int i; int j; float v; float x; float[100] a;
 while( true ) {
 do i = i+1; while( a[i] < v);
@@ -13,6 +10,3 @@ do i = i+1; while( a[i] < v);
  if( i >= j ) break;
   x = a[i]; a[i] = a[j]; a[j] = x;
 }
-}
-
-
