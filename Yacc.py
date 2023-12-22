@@ -19,6 +19,7 @@ t_LBRACE = r'\{'
 t_RBRACE = r'\}'
 t_PLUS = r'\+'
 t_MINUS = r'-'
+
 t_EQUALS = r'='
 t_LESS_THAN = r'<'
 t_TIMES = r'\*'
@@ -51,15 +52,22 @@ def t_ID(t):
     t.type = reserved.get(t.value, 'ID')
     return t
 
-t_ignore = ' \t'
+t_ignore = ' \t\n'
+
+def t_COMMENT(t):
+    r'\#.*'
+    pass
+
+
 
 def t_NUMBER(t):
-    r'\d+'
-    t.value = int(t.value)
+    r'\d+(\.\d+)?'
+    t.value = int(t.value) if '.' not in t.value else float(t.value)
     return t
 
+
 def t_ARRAY(t):
-    r'float\[([0-9]+)\][a-zA-Z_][a-zA-Z0-9_]*'
+    r'float\s*\[\d+\]\s*[a-zA-Z_][a-zA-Z0-9_]*'
     return t
 
 
@@ -67,22 +75,25 @@ def t_error(t):
     print(f"Caracter ilegal '{t.value[0]}'")
     t.lexer.skip(1)
 
-
 def p_statements(p):
     '''
     statements : statement SEMICOLON statements
                | statement SEMICOLON
-               
     '''
-    pass
+    if len(p) == 4:
+        p[0] = ('statements', p[1], p[3])
+    else:
+        p[0] = ('statements', p[1])
 
 def p_statement(p):
     '''
     statement : variable_declaration
               | array_declaration
               | while_loop
+              | ID EQUALS SEMICOLON
+              
     '''
-    p[0] = p[1]
+    p[0] = ('statement', p[1])
 
 def p_variable_declaration(p):
     '''
@@ -104,20 +115,50 @@ def p_array_declaration(p):
 def p_while_loop(p):
     '''
     while_loop : WHILE LPAREN TRUE RPAREN LBRACE do_assignment SEMICOLON WHILE LPAREN RPAREN RBRACE
-                | WHILE LPAREN TRUE RPAREN LBRACE do_assignment WHILE LPAREN array_declaration RPAREN RBRACE
-    '''
+                | WHILE LPAREN TRUE RPAREN LBRACE do_assignment WHILE LPAREN array_declaration RPAREN  RBRACE
+                | WHILE LPAREN TRUE RPAREN LBRACE do_assignment WHILE LPAREN array_declaration RPAREN  statement RBRACE
+                ''' 
     print("While Loop encontrado")
 
 def p_do_assignment(p):
     '''
-    do_assignment : DO assignment SEMICOLON while_condition
-                  | DO assignment SEMICOLON RBRACE
+    do_assignment : DO assignment SEMICOLON while_condition_opt
+                  | DO LBRACE statements RBRACE WHILE LPAREN condition RPAREN SEMICOLON 
+                  | DO LBRACE statements RBRACE WHILE LPAREN condition RPAREN SEMICOLON statements RBRACE
+                  
     '''
     print("Asignación y condición encontradas en do-while")
+
+
+def p_do_loop(p):
+    '''
+    do_loop : DO assignment SEMICOLON while_condition_opt
+                  | DO LBRACE statements RBRACE WHILE LPAREN condition RPAREN SEMICOLON
+                  | DO LBRACE statements RBRACE WHILE LPAREN condition RPAREN SEMICOLON statements RBRACE
+                  
+    '''
+    print("Asignación y condición encontradas en do-while")
+
+def p_while_condition_opt(p):
+    '''
+    while_condition_opt : WHILE LPAREN condition RPAREN
+                       | WHILE LPAREN condition RPAREN SEMICOLON
+                       | empty
+    '''
+    print("Condición de bucle while encontrada")
+
+def p_empty(p):
+    '''
+    empty :
+    '''
+    pass
+
 
 def p_while_condition(p):
     '''
     while_condition : WHILE LPAREN condition RPAREN
+                    | WHILE LPAREN condition RPAREN SEMICOLON
+                    | WHILE LPAREN condition RPAREN SEMICOLON WHILE
     '''
     print("Condición de bucle while encontrada")
 
@@ -139,6 +180,7 @@ def p_data_type(p):
     '''
     p[0] = p[1]
 
+
 def p_assignment(p):
     '''
     assignment : ID EQUALS expression
@@ -149,10 +191,11 @@ def p_expression(p):
     '''
     expression : ID PLUS NUMBER
                | ID MINUS ID
+               | ID MINUS NUMBER
                | ID TIMES ID
                | ID DIVIDE ID
                | ID MODULO ID
-               | array_access LESS_THAN ID
+               | array_access LESS_THAN ID RPAREN SEMICOLON BREAK SEMICOLON RBRACE 
                | array_access GREATER_THAN ID
                | array_access LESS_EQUAL ID
                | array_access GREATER_EQUAL ID
@@ -174,13 +217,10 @@ def p_array_access(p):
 def p_error(p):
     if p:
         print(f"Error de sintaxis en el token '{p.value}' en la línea {p.lineno}, posición {p.lexpos}")
-    else:
-        print("Error de sintaxis en la entrada")
+
 
 lexer = lex.lex()
 parser = yacc.yacc()
-
-
 def read_code_from_file(filename):
     with open(filename, 'r') as file:
         code = file.read()
